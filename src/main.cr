@@ -12,6 +12,8 @@ require "./def_visitor"
 require "./source_type_formatter"
 require "./source_typer"
 
+use_prelude = true
+
 options = ARGV.dup
 OptionParser.parse(options) do |opts|
   opts.banner = <<-USAGE
@@ -33,6 +35,10 @@ OptionParser.parse(options) do |opts|
     puts opts
     exit
   end
+
+  opts.on("--no-prelude", "Disable implicit prelude insertion") do
+    use_prelude = false
+  end
 end
 
 entrypoint = options.shift
@@ -44,7 +50,7 @@ end
 
 files = options
 
-results = SourceTyper.new(entrypoint, files).run
+results = SourceTyper.new(entrypoint, files, use_prelude).run
 
 if results.empty?
   puts "Nothing typed"

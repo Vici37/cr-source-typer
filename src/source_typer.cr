@@ -1,7 +1,7 @@
 class SourceTyper
   getter program
 
-  def initialize(@entrypoint : String, @filenames : Array(String))
+  def initialize(@entrypoint : String, @filenames : Array(String), @use_prelude : Bool)
     @program = Crystal::Program.new
   end
 
@@ -13,9 +13,11 @@ class SourceTyper
 
     nodes = Crystal::Expressions.from([original_node])
 
-    # Prepend the prelude to the parsed program
-    location = Crystal::Location.new(@entrypoint, 1, 1)
-    nodes = Crystal::Expressions.new([Crystal::Require.new("prelude").at(location), nodes] of Crystal::ASTNode)
+    if @use_prelude
+      # Prepend the prelude to the parsed program
+      location = Crystal::Location.new(@entrypoint, 1, 1)
+      nodes = Crystal::Expressions.new([Crystal::Require.new("prelude").at(location), nodes] of Crystal::ASTNode)
+    end
 
     # And normalize
     program.normalize(nodes)
