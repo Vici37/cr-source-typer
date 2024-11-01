@@ -1,0 +1,37 @@
+name: source-typer
+version: 0.1.0
+
+authors:
+  - Troy Sornson <troy@sornson.io>
+
+targets:
+  source-typer:
+    main: src/source-typer.cr
+
+crystal: '>= 1.13.3'
+
+dependencies:
+  markd:
+    github: icyleaf/markd
+  reply:
+    github: I3oris/reply
+    commit: db423dae3dd34c6ba5e36174653a0c109117a167
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+  ic:
+    github: I3oris/ic
+    branch: master
+
+targets:
+  typer:
+    main: src/main.cr
+
+executables:
+- typer
+
+scripts:
+  postinstall: shards build
+
+license: MIT
