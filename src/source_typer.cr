@@ -45,7 +45,7 @@ class SourceTyper
 
       formatter.skip_space_or_newline
       original_node.accept formatter
-      rets[file] = formatter.finish
+      rets[file] = formatter.finish if formatter.added_types?
     end
     rets
   end

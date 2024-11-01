@@ -1,5 +1,6 @@
 class SourceTyperFormatter < Crystal::Formatter
   @current_def : Crystal::Def? = nil
+  getter? added_types = false
 
   def initialize(filename, @accepted_locators : Set(Crystal::Location), @signatures : Hash(String, Signature))
     source = File.read(filename)
@@ -54,6 +55,7 @@ class SourceTyperFormatter < Crystal::Formatter
       skip_space
       write " : #{sig.return_type.to_s}"
       skip_space_or_newline
+      @added_types = true
     end
 
     if free_vars = node.free_vars
@@ -133,6 +135,7 @@ class SourceTyperFormatter < Crystal::Formatter
     elsif @accepted_locators.includes?(@current_def.try &.location) && (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?)
       skip_space_or_newline
       write " : #{sig.args[node.name].to_s}"
+      @added_types = true
     end
 
     if default_value
