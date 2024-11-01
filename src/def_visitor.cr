@@ -34,6 +34,7 @@ class DefVisitor < Crystal::Visitor
   end
 
   private def node_in_def_locators(location : Crystal::Location) : Bool
+    return false unless location.to_s.starts_with?("/")
     return true if @dir_locators.any? { |d| location.filename.to_s.starts_with?(d) }
     return true if @file_locators.includes?(location.filename)
     return true if @line_locators.includes?("#{location.filename}:#{location.line_number}")

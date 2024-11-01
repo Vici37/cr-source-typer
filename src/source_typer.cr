@@ -33,6 +33,8 @@ class SourceTyper
       return {} of String => String
     end
 
+    pp! def_visitor.files
+
     rets = {} of String => String
     def_visitor.files.each do |file|
       next unless File.file?(file)
@@ -45,7 +47,7 @@ class SourceTyper
 
       formatter.skip_space_or_newline
       original_node.accept formatter
-      rets[file] = formatter.finish if formatter.added_types?
+      rets[file] = formatter.finish
     end
     rets
   end
