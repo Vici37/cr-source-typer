@@ -4,10 +4,6 @@ version: 0.1.0
 authors:
   - Troy Sornson <troy@sornson.io>
 
-targets:
-  source-typer:
-    main: src/source-typer.cr
-
 crystal: '>= 1.13.3'
 
 dependencies:
