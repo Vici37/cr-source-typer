@@ -33,12 +33,10 @@ class SourceTyper
       return {} of String => String
     end
 
-    pp! def_visitor.files
-
     rets = {} of String => String
     def_visitor.files.each do |file|
       next unless File.file?(file)
-      formatter = SourceTyperFormatter.new(file, def_visitor.accepted_locators, signatures)
+      formatter = SourceTyperFormatter.new(file, signatures)
 
       parser = program.new_parser(File.read(file))
       parser.filename = file
@@ -47,7 +45,7 @@ class SourceTyper
 
       formatter.skip_space_or_newline
       original_node.accept formatter
-      rets[file] = formatter.finish
+      rets[file] = formatter.finish if formatter.added_types?
     end
     rets
   end
@@ -69,7 +67,7 @@ class SourceTyper
   end
 
   # Generates a map of Def#hash => Signature for that Def
-  private def init_signatures(def_id_to_hash : Hash(UInt64, UInt64))
+  private def init_signatures(def_id_to_hash : Hash(UInt64, UInt64)) : Hash(String, Signature)
     def_id_to_def_instances = Hash(UInt64, Array(Crystal::Def)).new { |h, k| h[k] = [] of Crystal::Def }
 
     program.def_instances.each do |instance_key, def_instance|

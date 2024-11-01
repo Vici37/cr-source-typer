@@ -1,7 +1,6 @@
 class DefVisitor < Crystal::Visitor
   getter all_defs = Array(Crystal::Def).new
   getter files = Set(String).new
-  getter accepted_locators = Set(Crystal::Location).new
 
   @dir_locators : Array(String)
   @file_locators : Array(String)
@@ -21,7 +20,6 @@ class DefVisitor < Crystal::Visitor
     return unless loc = node.location
     return unless loc.filename && loc.line_number && loc.column_number
     if node_in_def_locators(loc)
-      accepted_locators << loc
       all_defs << node
       files << loc.filename.to_s
     end
