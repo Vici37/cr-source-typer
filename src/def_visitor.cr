@@ -9,6 +9,7 @@ class DefVisitor < Crystal::Visitor
   @line_and_column_locators : Array(String)
 
   def initialize(@def_locators : Array(String))
+    @def_locators << Dir.current if @def_locators.empty?
     def_locs = @def_locators.map { |p| File.expand_path(p) }
     @dir_locators = def_locs.reject(&.ends_with?(".cr")).select { |p| File.directory?(p) }
     @file_locators = def_locs.select(&.ends_with?(".cr")).select { |p| File.file?(p) }
@@ -33,7 +34,7 @@ class DefVisitor < Crystal::Visitor
   end
 
   private def node_in_def_locators(location : Crystal::Location) : Bool
-    return true if @def_locators.empty?
+    return true if @dir_locators.any? { |d| location.filename.to_s.starts_with?(d) }
     return true if @file_locators.includes?(location.filename)
     return true if @line_locators.includes?("#{location.filename}:#{location.line_number}")
     @line_and_column_locators.includes?("#{location.filename}:#{location.line_number}:#{location.column_number}")

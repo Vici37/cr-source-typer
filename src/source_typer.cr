@@ -58,11 +58,11 @@ class SourceTyper
     ret
   end
 
-  @_signatures : Hash(UInt64, Signature)?
+  @_signatures : Hash(String, Signature)?
 
   # Creates a mapping of (parsed) def.object_id => Signature . A parsed def might not have a Signature
   # if it's not used, and therefore isn't typed
-  private def signatures : Hash(UInt64, Signature)
+  private def signatures : Hash(String, Signature)
     @_signatures || raise "Signatures not properly initialized!"
   end
 
@@ -100,7 +100,8 @@ class SourceTyper
 
       # Resolve all method arguments for this def into a hash of String -> ASTNode (where it will be a single type, or a union type)
       all_args = def_instances.map(&.args.map do |arg|
-        {arg.name, arg.type}
+        t = arg.type
+        {arg.name, t.is_a?(Crystal::VirtualType) ? t.base_type : t}
       end.reduce({} of String => Crystal::Type) do |acc, n|
         acc[n[0]] = n[1]
         acc
@@ -126,7 +127,7 @@ class SourceTyper
                       Crystal::Var.new(returns[0].to_s)
                     end
 
-      {def_id_to_hash[def_id], Signature.new(
+      {def_instances[0].location.to_s, Signature.new(
         name: def_instances[0].name,
         def_object_id: def_id,
         return_type: return_type,

@@ -29,7 +29,8 @@ end
 entrypoint = options.shift
 files = options
 
-pp! entrypoint, files
-
 results = SourceTyper.new(entrypoint, files).run
-pp! results
+
+results.each do |filename, file_contents|
+  File.write(filename, file_contents)
+end
