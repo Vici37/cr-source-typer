@@ -1,0 +1,8 @@
+Lint/UselessAssign:
+  Enabled: false # TODO: Enable once https://github.com/crystal-ameba/ameba/issues/447 is resolved
+Naming/BlockParameterName:
+  Enabled: false # Small param names are sometimes fine
+Documentation/DocumentationAdmonition:
+  Enabled: false # I like my TODOs
+Metrics/CyclomaticComplexity:
+  Enabled: false # Copied some methods from crystal in the formatter

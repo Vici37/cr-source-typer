@@ -53,7 +53,7 @@ class SourceTyperFormatter < Crystal::Formatter
       accept return_type
     elsif (sig = @signatures[node.location.to_s]?) && sig.name != "initialize"
       skip_space
-      write " : #{sig.return_type.to_s}"
+      write " : #{sig.return_type}"
       skip_space_or_newline
       @added_types = true
     end
@@ -134,7 +134,7 @@ class SourceTyperFormatter < Crystal::Formatter
       accept restriction
     elsif sig = @signatures[@current_def.try &.location.to_s || 0_u64]?
       skip_space_or_newline
-      write " : #{sig.args[node.name].to_s}"
+      write " : #{sig.args[node.name]}"
       @added_types = true
     end
 

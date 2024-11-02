@@ -22,7 +22,7 @@ development_dependencies:
 
 targets:
   typer:
-    main: src/main.cr
+    cli: src/cli.cr
 
 executables:
 - typer

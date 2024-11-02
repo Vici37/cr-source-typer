@@ -1,16 +1,4 @@
-require "prelude"
-# require "compiler/requires"
-require "compiler/crystal/annotatable"
-require "compiler/crystal/program"
-require "compiler/crystal/*"
-require "compiler/crystal/semantic/*"
-require "compiler/crystal/macros/*"
-
-require "./ext/crystal_config"
-require "./signature"
-require "./def_visitor"
-require "./source_type_formatter"
-require "./source_typer"
+require "./requires"
 
 use_prelude = true
 
@@ -26,7 +14,8 @@ OptionParser.parse(options) do |opts|
         * A line number in a file ('src/my_project.cr:3')
         * The location of the def method to be typed, specifically ('src/my_project.cr:3:3')
 
-        If a `def` definition matches a provided def_descriptor, then it will be typed if type restrictions are missing
+        If a `def` definition matches a provided def_descriptor, then it will be typed if type restrictions are missing.
+        If no dev_descriptors are provided, then all files under the current directory are matched.
 
         Options:
         USAGE

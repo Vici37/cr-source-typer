@@ -1,7 +1,7 @@
 OUTPUT=typer
 
 build:
-	crystal build src/main.cr -o $(OUTPUT) --error-trace --stats --progress
+	crystal build src/cli.cr -o $(OUTPUT) --error-trace --stats --progress
 
 test:
 	crystal spec --error-trace --stats

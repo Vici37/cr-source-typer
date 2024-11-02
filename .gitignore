@@ -3,4 +3,5 @@
 /bin/
 /.shards/
 *.dwarf
+*.lock
 typer
