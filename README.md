@@ -35,7 +35,7 @@ if it's missing. Definition locators come in 4 "flavors":
 * A `filename:line_number` format - only add typing to the definition on this line
 * A `filename:line_number:column_number` format - only add typing to a definition where the character `d` is on this line / column (unlikely to be used, but there it is)
 
-Providing 0 definition locators is the same as providing the current directory listing.
+Providing 0 definition locators is the same as providing either the 'src' directory (if it exists) or the current directory (if it doesn't). Trying to type the 'lib' directory can lead to a bad time.
 
 Assume there's a local file `hello.cr` with contents:
 

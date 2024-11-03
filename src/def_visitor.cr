@@ -8,7 +8,16 @@ class DefVisitor < Crystal::Visitor
   @line_and_column_locators : Array(String)
 
   def initialize(@def_locators : Array(String))
-    @def_locators << Dir.current if @def_locators.empty?
+    if @def_locators.empty?
+      # Nothing was provided, check if there's a 'src' directory and use that (to avoid trying to type the 'lib' directory)
+      if File.directory?(File.expand_path("src"))
+        @def_locators << File.expand_path("src")
+      else
+        # No idea where we are, use the current directory
+        @def_locators << Dir.current
+      end
+    end
+
     def_locs = @def_locators.map { |p| File.expand_path(p) }
     @dir_locators = def_locs.reject(&.ends_with?(".cr")).select { |p| File.directory?(p) }
     @file_locators = def_locs.select(&.ends_with?(".cr")).select { |p| File.file?(p) }
