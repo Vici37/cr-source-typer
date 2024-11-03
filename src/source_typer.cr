@@ -2,6 +2,7 @@ class SourceTyper
   getter program
 
   def initialize(@entrypoint : String, @filenames : Array(String), @use_prelude : Bool)
+    @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
   end
 
@@ -31,7 +32,6 @@ class SourceTyper
     init_signatures(def_id_to_hash)
 
     if def_visitor.files.empty?
-      puts "Nothing to type"
       return {} of String => String
     end
 

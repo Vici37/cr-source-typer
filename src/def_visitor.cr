@@ -17,8 +17,9 @@ class DefVisitor < Crystal::Visitor
   end
 
   def visit(node : Crystal::Def)
-    return unless loc = node.location
-    return unless loc.filename && loc.line_number && loc.column_number
+    return false unless loc = node.location
+    return false unless File.exists?(loc.filename.to_s)
+    return false unless loc.filename && loc.line_number && loc.column_number
     if node_in_def_locators(loc)
       all_defs << node
       files << loc.filename.to_s

@@ -14,7 +14,8 @@ describe SourceTyperFormatter do
   it "Adds type information" do
     sig = signature({"world" => "String"}, "Nil")
 
-    formatter = SourceTyperFormatter.new(hello_world_filename, {"#{hello_world_filename}:1:1" => sig})
+    formatter = SourceTyperFormatter.new(hello_world_filename,
+      {"#{hello_world_filename}:1:1" => sig})
     node = parse_hello_world
 
     node.accept formatter
