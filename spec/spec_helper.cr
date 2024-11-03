@@ -12,8 +12,16 @@ def parse(filename, source)
   parser.parse
 end
 
+def sample_spec(filename) : String
+  "#{__DIR__}/sample_spec_files/#{filename}.cr"
+end
+
 def hello_world_filename : String
-  "#{__DIR__}/sample_spec_files/hello_world.cr"
+  sample_spec("hello_world")
+end
+
+def all_def_examples_filename : String
+  sample_spec("all_def_examples")
 end
 
 def hello_world_content : String

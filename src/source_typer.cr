@@ -84,8 +84,17 @@ class SourceTyper
 
     while type = types.shift?
       type.types?.try &.each { |_, t| types << t }
+
       if type.responds_to?(:def_instances)
         type.def_instances.each do |instance_key, def_instance|
+          next unless def_id_to_hash.keys.includes?(instance_key.def_object_id)
+
+          def_id_to_def_instances[instance_key.def_object_id] << def_instance
+        end
+      end
+      metaclass = type.metaclass
+      if metaclass.responds_to?(:def_instances)
+        metaclass.def_instances.each do |instance_key, def_instance|
           next unless def_id_to_hash.keys.includes?(instance_key.def_object_id)
 
           def_id_to_def_instances[instance_key.def_object_id] << def_instance
