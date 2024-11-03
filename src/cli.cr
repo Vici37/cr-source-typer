@@ -45,7 +45,7 @@ if results.empty?
   puts "Nothing typed"
 else
   results.each do |filename, file_contents|
-    pp! filename, file_contents
+    # pp! filename, file_contents
     File.write(filename, file_contents)
   end
 end
