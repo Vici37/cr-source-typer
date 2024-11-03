@@ -3,7 +3,7 @@ require "./spec_helper"
 describe SourceTyper do
   it "parses, runs semantic, and types everything" do
     entrypoint = all_def_examples_filename
-    typer = SourceTyper.new(entrypoint, [] of String, true)
+    typer = SourceTyper.new(entrypoint, ["spec"], true)
 
     results = typer.run
 

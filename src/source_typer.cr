@@ -92,6 +92,7 @@ class SourceTyper
           def_id_to_def_instances[instance_key.def_object_id] << def_instance
         end
       end
+
       metaclass = type.metaclass
       if metaclass.responds_to?(:def_instances)
         metaclass.def_instances.each do |instance_key, def_instance|
