@@ -14,6 +14,14 @@ describe SourceTyper do
       "world"
     end
 
+    def hello1(arg1 : String) : String
+      arg1
+    end
+
+    def hello2(arg1 : Int32, *, arg2 : Int32) : Int32
+      arg1 + arg2
+    end
+
     class Test
       def hello : String
         "world"
@@ -25,6 +33,8 @@ describe SourceTyper do
     end
 
     hello
+    hello1("world")
+    hello2(1, arg2: 2)
     Test.hello
     Test.new.hello
 
