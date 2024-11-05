@@ -12,7 +12,8 @@ end
 results = SourceTyper.new(
   cli_options.entrypoint,
   cli_options.def_locators,
-  cli_options.use_prelude?
+  cli_options.use_prelude?,
+  cli_options.type_blocks?
 ).run
 
 if results.empty?
