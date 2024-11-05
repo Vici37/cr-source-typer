@@ -1,7 +1,7 @@
 class SourceTyper
   getter program
 
-  def initialize(@entrypoint : String, @filenames : Array(String), @use_prelude : Bool)
+  def initialize(@entrypoint : String, @def_locators : Array(String), @use_prelude : Bool, @type_blocks : Bool)
     @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
   end
@@ -25,7 +25,7 @@ class SourceTyper
 
     # And now infer types of everything
     semantic_node = program.semantic nodes, cleanup: true
-    def_visitor = DefVisitor.new(@filenames)
+    def_visitor = DefVisitor.new(@def_locators)
     semantic_node.accept(def_visitor)
 
     accepted_def_ids = def_visitor.all_defs.map(&.object_id)
@@ -125,7 +125,7 @@ class SourceTyper
           arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
         end
 
-        if arg = def_instance.block_arg
+        if @type_blocks && (arg = def_instance.block_arg)
           t = arg.type
           arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
         end

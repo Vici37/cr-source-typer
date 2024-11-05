@@ -1,11 +1,12 @@
 name: source-typer
-version: 0.1.0
+version: 0.1.1
 
 authors:
   - Troy Sornson <troy@sornson.io>
 
 crystal: '>= 1.13.3'
 
+# These are copied from crystal-lang/crystal shard.yml, not actually used in this project
 dependencies:
   markd:
     github: icyleaf/markd

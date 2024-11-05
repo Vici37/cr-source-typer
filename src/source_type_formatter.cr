@@ -132,7 +132,7 @@ class SourceTyperFormatter < Crystal::Formatter
       write_token " ", :OP_COLON, " "
       skip_space_or_newline
       accept restriction
-    elsif sig = @signatures[@current_def.try &.location.to_s || 0_u64]?
+    elsif (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?) && sig.args[node.name]?
       skip_space_or_newline
       write " : #{sig.args[node.name]}"
       @added_types = true
