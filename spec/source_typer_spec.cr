@@ -22,6 +22,10 @@ describe SourceTyper do
       arg1 + arg2
     end
 
+    def hello3(&block : Proc(Nil)) : Nil
+      block.call
+    end
+
     class Test
       def hello : String
         "world"
@@ -35,6 +39,9 @@ describe SourceTyper do
     hello
     hello1("world")
     hello2(1, arg2: 2)
+    hello3 do
+      "hello"
+    end
     Test.hello
     Test.new.hello
 

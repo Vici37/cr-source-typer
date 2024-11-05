@@ -36,7 +36,6 @@ end
 def signature(args : Hash(String, String), ret : String) : Signature
   Signature.new(
     "Name",
-    0_u64,
     Crystal::Var.new(ret),
     Crystal::Location.new("filename", 0, 0),
     nil,
