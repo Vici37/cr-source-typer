@@ -38,7 +38,6 @@ def signature(args : Hash(String, String), ret : String) : Signature
     "Name",
     Crystal::Var.new(ret),
     Crystal::Location.new("filename", 0, 0),
-    nil,
     args.map { |k, v| {k, Crystal::Var.new(v).as(Crystal::ASTNode)} }.to_h
   )
 end

@@ -130,6 +130,11 @@ class SourceTyper
           arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
         end
 
+        if arg = def_instance.double_splat
+          t = arg.type
+          arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
+        end
+
         arg_types
       end.reduce(Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }) do |acc, def_args|
         def_args.each do |name, arg_type|
