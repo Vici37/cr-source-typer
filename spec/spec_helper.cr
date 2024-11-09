@@ -33,6 +33,16 @@ def parse_hello_world
   parse(filename, hello_world_content)
 end
 
+def options(blocks : Bool, splats : Bool, double_splats : Bool) : CliOptions
+  argv = [] of String
+  argv << "--include-blocks" if blocks
+  argv << "--include-splats" if splats
+  argv << "--include-double-splats" if double_splats
+
+  argv << "dummy"
+  CliOptions.new(argv).parse
+end
+
 def signature(args : Hash(String, String), ret : String) : Signature
   Signature.new(
     "Name",

@@ -12,12 +12,11 @@ end
 results = SourceTyper.new(
   cli_options.entrypoint,
   cli_options.def_locators,
-  cli_options.use_prelude?,
-  cli_options.type_blocks?
+  cli_options
 ).run
 
 if results.empty?
-  puts "Nothing typed"
+  puts "No type restrictions added"
 else
   results.each do |filename, file_contents|
     # pp! filename, file_contents

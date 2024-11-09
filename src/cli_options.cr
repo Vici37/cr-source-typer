@@ -4,6 +4,8 @@ class CliOptions
   getter def_locators : Array(String) = [] of String
   getter? use_prelude : Bool = true
   getter? type_blocks : Bool = false
+  getter? type_splats : Bool = false
+  getter? type_double_splats : Bool = false
 
   def initialize(@original_options : Array(String))
   end
@@ -40,6 +42,14 @@ class CliOptions
 
       opts.on("--include-blocks", "Enable adding types to named block arguments (these usually get typed with Proc(Nil) and isn't helpful)") do
         @type_blocks = true
+      end
+
+      opts.on("--include-splats", "Enable adding types to splats") do
+        @type_splats = true
+      end
+
+      opts.on("--include-double-splats", "Enable adding types to double splats") do
+        @type_double_splats = true
       end
     end
 

@@ -15,6 +15,14 @@ def hello3(&block)
   block.call
 end
 
+def hello4(*args)
+  args[0]?
+end
+
+def hello5(**args)
+  nil
+end
+
 class Test
   def hello
     "world"
@@ -31,5 +39,7 @@ hello2(1, arg2: 2)
 hello3 do
   "hello"
 end
+hello4(3, "ok")
+hello5(test: "test", other: 3)
 Test.hello
 Test.new.hello

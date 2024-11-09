@@ -1,7 +1,7 @@
 class SourceTyper
   getter program
 
-  def initialize(@entrypoint : String, @def_locators : Array(String), @use_prelude : Bool, @type_blocks : Bool)
+  def initialize(@entrypoint : String, @def_locators : Array(String), @options : CliOptions)
     @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
   end
@@ -14,7 +14,7 @@ class SourceTyper
 
     nodes = Crystal::Expressions.from([original_node])
 
-    if @use_prelude
+    if @options.use_prelude?
       # Prepend the prelude to the parsed program
       location = Crystal::Location.new(@entrypoint, 1, 1)
       nodes = Crystal::Expressions.new([Crystal::Require.new("prelude").at(location), nodes] of Crystal::ASTNode)
@@ -68,15 +68,31 @@ class SourceTyper
     @_signatures || raise "Signatures not properly initialized!"
   end
 
+  private def push_instance(hash, obj_id, instance, defs)
+    return unless ds = defs
+
+    all_defs = defs.values.flatten
+
+    def_obj = all_defs.find! { |d| d.def.object_id == obj_id }.def
+
+    hash[obj_id] << {
+      instance: instance,
+      parsed:   def_obj,
+    }
+  end
+
   # Return all def_instances that map to an accepted def object_id. A given def can have multiple
   # def_instances when called with different argument types.
-  private def accepted_def_instances(accepted_def_ids : Array(UInt64)) : Array(Array(Crystal::Def))
-    ret = Hash(UInt64, Array(Crystal::Def)).new { |h, k| h[k] = [] of Crystal::Def }
+  private def accepted_def_instances(accepted_def_ids : Array(UInt64)) : Array(Array(NamedTuple(instance: Crystal::Def, parsed: Crystal::Def)))
+    ret = Hash(UInt64, Array(NamedTuple(instance: Crystal::Def, parsed: Crystal::Def))).new do |h, k|
+      h[k] = [] of NamedTuple(instance: Crystal::Def, parsed: Crystal::Def)
+    end
 
     program.def_instances.each do |instance_key, def_instance|
       next unless accepted_def_ids.includes?(instance_key.def_object_id)
 
-      ret[instance_key.def_object_id] << def_instance
+      push_instance(ret, instance_key.def_object_id, def_instance, program.defs)
+      # ret[instance_key.def_object_id] << {instance: def_instance, parsed: program.defs.not_nil![def_instance.name.split(":")[0]]}
     end
 
     types = [] of Crystal::Type
@@ -90,7 +106,8 @@ class SourceTyper
         type.def_instances.each do |instance_key, def_instance|
           next unless accepted_def_ids.includes?(instance_key.def_object_id)
 
-          ret[instance_key.def_object_id] << def_instance
+          push_instance(ret, instance_key.def_object_id, def_instance, type.defs)
+          # ret[instance_key.def_object_id] << {instance: def_instance, parsed: defs[def_instance.name.split(":")[0]]}
         end
       end
 
@@ -99,7 +116,8 @@ class SourceTyper
         metaclass.def_instances.each do |instance_key, def_instance|
           next unless accepted_def_ids.includes?(instance_key.def_object_id)
 
-          ret[instance_key.def_object_id] << def_instance
+          push_instance(ret, instance_key.def_object_id, def_instance, metaclass.defs)
+          # ret[instance_key.def_object_id] << {instance: def_instance, parsed: defs[def_instance.name.split(":")[0]]}
         end
       end
     end
@@ -107,41 +125,67 @@ class SourceTyper
     ret.values
   end
 
-  # Generates a map of Def#hash => Signature for that Def
+  private def resolve_type(arg)
+    t = arg.type
+    t.is_a?(Crystal::VirtualType) ? t.base_type : t
+  end
+
+  # Generates a map of Def#location => Signature for that Def
   private def init_signatures(accepted_def_ids : Array(UInt64)) : Hash(String, Signature)
     # This is hard to read, but transforms the def_instances array into a hash of def.location -> its full Signature
     @_signatures ||= accepted_def_instances(accepted_def_ids).compact_map do |def_instances|
       # Finally, combine all def_instances for a single def_obj_id into a single signature
 
-      # If there's no location, there's nothing to re-write
-      next nil if def_instances[0].location.nil?
+      parsed = def_instances[0][:parsed]
 
-      # Resolve all method arguments for this def into a hash of String -> ASTNode (where it will be a single type, or a union type)
-      all_args = def_instances.map do |def_instance|
-        arg_types = {} of String => Crystal::Type
+      all_typed_args = Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }
+      safe_splat_index = parsed.splat_index || Int32::MAX
+      splat_arg_name = parsed.args[safe_splat_index]?.try &.name
+      named_arg_name = parsed.double_splat.try &.name
 
+      encountered_non_splat_arg_def_instance = false
+      encountered_non_double_splat_arg_def_instance = false
+
+      def_instances.map(&.[:instance]).each do |def_instance|
+        encountered_splat_arg = false
+        encountered_double_splat_arg = false
         def_instance.args.each do |arg|
-          t = arg.type
-          arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
+          if arg.name == arg.external_name && !arg.name.starts_with?("__temp_")
+            all_typed_args[arg.external_name] << resolve_type(arg)
+          elsif @options.type_splats? && (splat_arg = splat_arg_name) && arg.name == arg.external_name && arg.name.starts_with?("__temp_")
+            encountered_splat_arg = true
+            all_typed_args[splat_arg] << resolve_type(arg)
+          elsif @options.type_double_splats? && (named_arg = named_arg_name) && arg.name != arg.external_name && arg.name.starts_with?("__temp_")
+            encountered_double_splat_arg = true
+            all_typed_args[named_arg] << resolve_type(arg)
+          elsif (!@options.type_splats? || !@options.type_double_splats?) && arg.name.starts_with?("__temp_")
+            # Ignore, it didn't fall into one of the above conditions
+          else
+            raise "Unknown handling of arg #{arg} in #{def_instance}\n#{parsed}"
+          end
         end
 
-        if @type_blocks && (arg = def_instance.block_arg)
-          t = arg.type
-          arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
-        end
+        encountered_non_splat_arg_def_instance |= !encountered_splat_arg
+        encountered_non_double_splat_arg_def_instance |= !encountered_double_splat_arg
 
-        if arg = def_instance.double_splat
-          t = arg.type
-          arg_types[arg.name] = t.is_a?(Crystal::VirtualType) ? t.base_type : t
+        if @options.type_blocks? && (arg = def_instance.block_arg)
+          all_typed_args[arg.external_name] << resolve_type(arg)
         end
+      end
 
-        arg_types
-      end.reduce(Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }) do |acc, def_args|
-        def_args.each do |name, arg_type|
-          acc[name] << arg_type
-        end
-        acc
-      end.map do |name, type_set|
+      # If a given collection of def_instances has a splat defined AND at least one def_instance didn't have a type for it,
+      # then we can't add types to the signature.
+      # https://crystal-lang.org/reference/1.14/syntax_and_semantics/type_restrictions.html#splat-type-restrictions
+      if @options.type_splats? && (splat_arg = splat_arg_name) && encountered_non_splat_arg_def_instance
+        puts "WARNING: not adding type restriction for splat, found empty splat call: #{parsed.location}"
+        all_typed_args.delete(splat_arg)
+      end
+      if @options.type_double_splats? && (named_arg = named_arg_name) && encountered_non_double_splat_arg_def_instance
+        puts "WARNING: not adding type restriction for double splat, found empty deouble splat call: #{parsed.location}"
+        all_typed_args.delete(named_arg)
+      end
+
+      all_args = all_typed_args.map do |name, type_set|
         if type_set.size > 1
           {name, Crystal::Union.new(type_set.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })}
         else
@@ -150,7 +194,7 @@ class SourceTyper
       end.to_h
 
       # Similar idea for return_type
-      returns = def_instances.compact_map(&.type).uniq!
+      returns = def_instances.compact_map(&.[:instance].type).uniq!
 
       return_type = if returns.size > 1
                       Crystal::Union.new(returns.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })
@@ -158,10 +202,10 @@ class SourceTyper
                       Crystal::Var.new(returns[0].to_s)
                     end
 
-      {def_instances[0].location.to_s, Signature.new(
-        name: def_instances[0].name,
+      {def_instances[0][:instance].location.to_s, Signature.new(
+        name: def_instances[0][:instance].name,
         return_type: return_type,
-        location: def_instances[0].location.not_nil!,
+        location: def_instances[0][:instance].location.not_nil!,
         args: all_args
       )}
     end.to_h
