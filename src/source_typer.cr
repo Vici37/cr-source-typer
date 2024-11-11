@@ -29,7 +29,13 @@ class SourceTyper
     semantic_node.accept(def_visitor)
 
     accepted_def_locations = def_visitor.all_defs.map(&.location.to_s).uniq!
-    init_signatures(accepted_def_locations)
+    accepted_defs = def_visitor.all_defs.map do |the_def|
+      {
+        the_def.location.to_s,
+        the_def,
+      }
+    end.to_h
+    init_signatures(accepted_defs)
 
     if def_visitor.files.empty?
       return {} of String => String
@@ -68,34 +74,17 @@ class SourceTyper
     @_signatures || raise "Signatures not properly initialized!"
   end
 
-  private def push_instance(hash, location, instance, defs)
-    return unless ds = defs
-
-    all_defs = defs.values.flatten
-
-    def_obj = all_defs.find { |d| d.def.location.to_s == location }.try &.def
-
-    if parsed = def_obj
-      hash[parsed.location.to_s] << {
-        instance: instance,
-        parsed:   parsed,
-      }
-    else
-      puts "WARN: Unable to find parsed definition for: #{instance}\n#{instance.location}\n#{instance.owner}"
-    end
-  end
-
   # Return all def_instances that map to an accepted def object_id. A given def can have multiple
   # def_instances when called with different argument types.
-  private def accepted_def_instances(accepted_def_locations : Array(String)) : Array(Array(NamedTuple(instance: Crystal::Def, parsed: Crystal::Def)))
-    ret = Hash(String, Array(NamedTuple(instance: Crystal::Def, parsed: Crystal::Def))).new do |h, k|
-      h[k] = [] of NamedTuple(instance: Crystal::Def, parsed: Crystal::Def)
+  private def accepted_def_instances(accepted_defs : Hash(String, Crystal::Def)) : Hash(String, Array(Crystal::Def))
+    ret = Hash(String, Array(Crystal::Def)).new do |h, k|
+      h[k] = [] of Crystal::Def
     end
 
     program.def_instances.each do |_, def_instance|
-      next unless accepted_def_locations.includes?(def_instance.location.to_s)
+      next unless accepted_defs.keys.includes?(def_instance.location.to_s)
 
-      push_instance(ret, def_instance.location.to_s, def_instance, program.defs)
+      ret[def_instance.location.to_s] << def_instance
     end
 
     types = [] of Crystal::Type
@@ -107,23 +96,23 @@ class SourceTyper
 
       if type.responds_to?(:def_instances)
         type.def_instances.each do |_, def_instance|
-          next unless accepted_def_locations.includes?(def_instance.location.to_s)
+          next unless accepted_defs.keys.includes?(def_instance.location.to_s)
 
-          push_instance(ret, def_instance.location.to_s, def_instance, type.defs)
+          ret[def_instance.location.to_s] << def_instance
         end
       end
 
       metaclass = type.metaclass
       if metaclass.responds_to?(:def_instances)
         metaclass.def_instances.each do |_, def_instance|
-          next unless accepted_def_locations.includes?(def_instance.location.to_s)
+          next unless accepted_defs.keys.includes?(def_instance.location.to_s)
 
-          push_instance(ret, def_instance.location.to_s, def_instance, metaclass.defs)
+          ret[def_instance.location.to_s] << def_instance
         end
       end
     end
 
-    ret.values
+    ret
   end
 
   private def resolve_type(arg)
@@ -132,12 +121,12 @@ class SourceTyper
   end
 
   # Generates a map of Def#location => Signature for that Def
-  private def init_signatures(accepted_def_ids : Array(String)) : Hash(String, Signature)
+  private def init_signatures(accepted_defs : Hash(String, Crystal::Def)) : Hash(String, Signature)
     # This is hard to read, but transforms the def_instances array into a hash of def.location -> its full Signature
-    @_signatures ||= accepted_def_instances(accepted_def_ids).compact_map do |def_instances|
+    @_signatures ||= accepted_def_instances(accepted_defs).compact_map do |location, def_instances|
       # Finally, combine all def_instances for a single def_obj_id into a single signature
 
-      parsed = def_instances[0][:parsed]
+      parsed = accepted_defs[location]
 
       all_typed_args = Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }
       safe_splat_index = parsed.splat_index || Int32::MAX
@@ -147,7 +136,7 @@ class SourceTyper
       encountered_non_splat_arg_def_instance = false
       encountered_non_double_splat_arg_def_instance = false
 
-      def_instances.map(&.[:instance]).each do |def_instance|
+      def_instances.each do |def_instance|
         encountered_splat_arg = false
         encountered_double_splat_arg = false
         def_instance.args.each do |arg|
@@ -196,7 +185,7 @@ class SourceTyper
 
       # Similar idea for return_type
       returns = def_instances.compact_map do |inst|
-        resolve_type(inst[:instance])
+        resolve_type(inst)
       end.uniq!
 
       return_type = if returns.size > 1
@@ -205,10 +194,10 @@ class SourceTyper
                       Crystal::Var.new(returns[0].to_s)
                     end
 
-      {def_instances[0][:instance].location.to_s, Signature.new(
-        name: def_instances[0][:instance].name,
+      {parsed.location.to_s, Signature.new(
+        name: parsed.name,
         return_type: return_type,
-        location: def_instances[0][:instance].location.not_nil!,
+        location: parsed.location.not_nil!,
         args: all_args
       )}
     end.to_h
