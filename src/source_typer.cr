@@ -120,6 +120,16 @@ class SourceTyper
     t.is_a?(Crystal::VirtualType) ? t.base_type : t
   end
 
+  # Strip out any NoReturns, or Procs that point to them (maybe all generics? Start with procs)
+  private def filter_no_return(types)
+    compacted_types = types.to_a.reject! do |type|
+      type.no_return? || (type.is_a?(Crystal::ProcInstanceType) && type.as(Crystal::ProcInstanceType).return_type.no_return?)
+    end
+
+    compacted_types << program.nil if compacted_types.empty?
+    compacted_types
+  end
+
   # Generates a map of Def#location => Signature for that Def
   private def init_signatures(accepted_defs : Hash(String, Crystal::Def)) : Hash(String, Signature)
     # This is hard to read, but transforms the def_instances array into a hash of def.location -> its full Signature
@@ -175,18 +185,20 @@ class SourceTyper
         all_typed_args.delete(named_arg)
       end
 
-      all_args = all_typed_args.map do |name, type_set|
-        if type_set.size > 1
-          {name, Crystal::Union.new(type_set.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })}
+      all_args = all_typed_args.compact_map do |name, type_set|
+        compacted_types = filter_no_return(type_set)
+
+        if compacted_types.size > 1
+          {name, Crystal::Union.new(compacted_types.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })}
         else
-          {name, Crystal::Var.new(type_set.to_a[0].to_s)}
+          {name, Crystal::Var.new(compacted_types.to_a[0].to_s)}
         end
       end.to_h
 
       # Similar idea for return_type
-      returns = def_instances.compact_map do |inst|
+      returns = filter_no_return(def_instances.compact_map do |inst|
         resolve_type(inst)
-      end.uniq!
+      end.uniq!)
 
       return_type = if returns.size > 1
                       Crystal::Union.new(returns.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })

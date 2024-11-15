@@ -33,11 +33,12 @@ def parse_hello_world
   parse(filename, hello_world_content)
 end
 
-def options(blocks : Bool, splats : Bool, double_splats : Bool) : CliOptions
+def options(blocks : Bool, splats : Bool, double_splats : Bool, prelude : Bool = true) : CliOptions
   argv = [] of String
   argv << "--include-blocks" if blocks
   argv << "--include-splats" if splats
   argv << "--include-double-splats" if double_splats
+  argv << "--no-prelude" unless prelude
 
   argv << "dummy"
   CliOptions.new(argv).parse
