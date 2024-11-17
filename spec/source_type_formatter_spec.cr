@@ -2,7 +2,7 @@ require "./spec_helper"
 
 describe SourceTyperFormatter do
   it "formats nothing" do
-    formatter = SourceTyperFormatter.new(hello_world_filename, {} of String => Signature)
+    formatter = SourceTyperFormatter.new(hello_world_content, {} of String => Signature)
     node = parse_hello_world
 
     node.accept formatter
@@ -14,7 +14,7 @@ describe SourceTyperFormatter do
   it "Adds type information" do
     sig = signature({"world" => "String"}, "Nil")
 
-    formatter = SourceTyperFormatter.new(hello_world_filename,
+    formatter = SourceTyperFormatter.new(hello_world_content,
       {"#{hello_world_filename}:1:1" => sig})
     node = parse_hello_world
 

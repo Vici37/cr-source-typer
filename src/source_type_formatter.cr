@@ -2,8 +2,8 @@ class SourceTyperFormatter < Crystal::Formatter
   @current_def : Crystal::Def? = nil
   getter? added_types = false
 
-  def initialize(filename : String, @signatures : Hash(String, Signature))
-    source = File.read(filename)
+  def initialize(source : String, @signatures : Hash(String, Signature))
+    # source = File.read(filename)
     super(source)
   end
 

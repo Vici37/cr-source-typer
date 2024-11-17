@@ -16,6 +16,10 @@ def sample_spec(filename) : String
   "#{__DIR__}/sample_spec_files/#{filename}.cr"
 end
 
+def example_content(path) : String
+  File.read(path)
+end
+
 def hello_world_filename : String
   sample_spec("hello_world")
 end
@@ -25,7 +29,7 @@ def all_def_examples_filename : String
 end
 
 def hello_world_content : String
-  File.read(hello_world_filename)
+  example_content(hello_world_filename)
 end
 
 def parse_hello_world

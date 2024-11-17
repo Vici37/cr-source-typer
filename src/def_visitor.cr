@@ -7,14 +7,15 @@ class DefVisitor < Crystal::Visitor
   @line_locators : Array(String)
   @line_and_column_locators : Array(String)
 
-  def initialize(@def_locators : Array(String))
+  def initialize(@def_locators : Array(String), entrypoint)
     if @def_locators.empty?
-      # Nothing was provided, check if there's a 'src' directory and use that (to avoid trying to type the 'lib' directory)
-      if File.directory?(File.expand_path("src"))
-        @def_locators << File.expand_path("src")
+      entrypoint_dir = File.dirname(entrypoint)
+      # Nothing was provided, is the entrypoint in the `src` directory?
+      if entrypoint_dir.ends_with?("/src") || entrypoint_dir.includes?("/src/")
+        @def_locators << File.dirname(entrypoint_dir)
       else
-        # No idea where we are, use the current directory
-        @def_locators << Dir.current
+        # entrypoint isn't in a 'src' directory, assume we should only type it, and only it, wherever it is
+        @def_locators << entrypoint
       end
     end
 
@@ -27,7 +28,6 @@ class DefVisitor < Crystal::Visitor
 
   def visit(node : Crystal::Def)
     return false unless loc = node.location
-    return false unless File.exists?(loc.filename.to_s)
     return false unless loc.filename && loc.line_number && loc.column_number
     if node_in_def_locators(loc)
       all_defs << node

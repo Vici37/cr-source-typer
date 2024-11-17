@@ -1,14 +1,36 @@
 class SourceTyper
-  getter program
+  getter program, files
 
   def initialize(@entrypoint : String, @def_locators : Array(String), @options : CliOptions)
     @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
+    @files = Set(String).new
+    @warnings = [] of String
   end
 
   def run : Hash(String, String)
-    parser = program.new_parser(File.read(@entrypoint))
-    parser.filename = @entrypoint
+    semantic(@entrypoint, File.read(@entrypoint))
+
+    rets = {} of String => String
+
+    @warnings.each do |warning|
+      puts "WARNING: #{warning}"
+    end
+
+    @files.each do |file|
+      next unless File.file?(file)
+      source = File.read(file)
+      if typed_source = type_source(file, source)
+        rets[file] = typed_source
+      end
+    end
+
+    rets
+  end
+
+  def semantic(entrypoint, entrypoint_content) : Nil
+    parser = program.new_parser(entrypoint_content)
+    parser.filename = entrypoint
     parser.wants_doc = false
     original_node = parser.parse
 
@@ -16,7 +38,7 @@ class SourceTyper
 
     if @options.use_prelude?
       # Prepend the prelude to the parsed program
-      location = Crystal::Location.new(@entrypoint, 1, 1)
+      location = Crystal::Location.new(entrypoint, 1, 1)
       nodes = Crystal::Expressions.new([Crystal::Require.new("prelude").at(location), nodes] of Crystal::ASTNode)
     end
 
@@ -25,7 +47,7 @@ class SourceTyper
 
     # And now infer types of everything
     semantic_node = program.semantic nodes, cleanup: true
-    def_visitor = DefVisitor.new(@def_locators)
+    def_visitor = DefVisitor.new(@def_locators, entrypoint)
     semantic_node.accept(def_visitor)
 
     accepted_def_locations = def_visitor.all_defs.map(&.location.to_s).uniq!
@@ -37,25 +59,21 @@ class SourceTyper
     end.to_h
     init_signatures(accepted_defs)
 
-    if def_visitor.files.empty?
-      return {} of String => String
-    end
+    @files = def_visitor.files
+  end
 
-    rets = {} of String => String
-    def_visitor.files.each do |file|
-      next unless File.file?(file)
-      formatter = SourceTyperFormatter.new(file, signatures)
+  def type_source(filename, source) : String?
+    formatter = SourceTyperFormatter.new(source, signatures)
 
-      parser = program.new_parser(File.read(file))
-      parser.filename = file
-      parser.wants_doc = false
-      original_node = parser.parse
+    parser = program.new_parser(source)
+    parser.filename = filename
+    parser.wants_doc = false
+    original_node = parser.parse
 
-      formatter.skip_space_or_newline
-      original_node.accept formatter
-      rets[file] = formatter.finish if formatter.added_types?
-    end
-    rets
+    formatter.skip_space_or_newline
+    original_node.accept formatter
+
+    formatter.added_types? ? formatter.finish : nil
   end
 
   # If a def is already fully typed, we don't need to check / write it
@@ -70,7 +88,7 @@ class SourceTyper
 
   # Creates a mapping of (parsed) def.object_id => Signature . A parsed def might not have a Signature
   # if it's not used, and therefore isn't typed
-  private def signatures : Hash(String, Signature)
+  def signatures : Hash(String, Signature)
     @_signatures || raise "Signatures not properly initialized!"
   end
 
@@ -140,7 +158,7 @@ class SourceTyper
 
       all_typed_args = Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }
       safe_splat_index = parsed.splat_index || Int32::MAX
-      splat_arg_name = parsed.args[safe_splat_index]?.try &.name
+      splat_arg_name = parsed.args[safe_splat_index]?.try &.name.try { |name| name.empty? ? nil : name }
       named_arg_name = parsed.double_splat.try &.name
 
       encountered_non_splat_arg_def_instance = false
@@ -177,11 +195,11 @@ class SourceTyper
       # then we can't add types to the signature.
       # https://crystal-lang.org/reference/1.14/syntax_and_semantics/type_restrictions.html#splat-type-restrictions
       if @options.type_splats? && (splat_arg = splat_arg_name) && encountered_non_splat_arg_def_instance
-        puts "WARNING: not adding type restriction for splat, found empty splat call: #{parsed.location}"
+        @warnings << "Not adding type restriction for splat #{splat_arg}, found empty splat call: #{parsed.location}"
         all_typed_args.delete(splat_arg)
       end
       if @options.type_double_splats? && (named_arg = named_arg_name) && encountered_non_double_splat_arg_def_instance
-        puts "WARNING: not adding type restriction for double splat, found empty deouble splat call: #{parsed.location}"
+        @warnings << "Not adding type restriction for double splat #{named_arg}, found empty deouble splat call: #{parsed.location}"
         all_typed_args.delete(named_arg)
       end
 

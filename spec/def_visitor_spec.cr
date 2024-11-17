@@ -1,22 +1,9 @@
 require "./spec_helper"
 
 describe DefVisitor do
-  # Recent change caused the absent def_locator to use the 'src' directory (to exclude the 'lib' directory). This breaks this spec
-  # it "visits definitions and accepts all" do
-  #   node = parse_hello_world
-  #   visitor = DefVisitor.new([] of String)
-
-  #   node.accept visitor
-
-  #   visitor.files.to_a.should eq [hello_world_filename]
-  #   visitor.all_defs.size.should eq 2
-  #   visitor.all_defs[0].name.should eq "hello"
-  #   visitor.all_defs[1].name.should eq "world"
-  # end
-
   it "visits definitions and accepts file" do
     node = parse_hello_world
-    visitor = DefVisitor.new([hello_world_filename])
+    visitor = DefVisitor.new([hello_world_filename], hello_world_filename)
 
     node.accept visitor
 
@@ -28,14 +15,14 @@ describe DefVisitor do
 
   it "visits line definitions and does nothing with non-def line" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:2"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:2"], hello_world_filename)
     node.accept visitor
     visitor.files.should be_empty
   end
 
   it "visits line definitions and finds def" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:1"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:1"], hello_world_filename)
     node.accept visitor
     visitor.files.to_a.should eq [hello_world_filename]
     visitor.all_defs.size.should eq 1
@@ -44,7 +31,7 @@ describe DefVisitor do
 
   it "visits line definitions and finds different def" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:4"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:4"], hello_world_filename)
     node.accept visitor
     visitor.files.to_a.should eq [hello_world_filename]
     visitor.all_defs.size.should eq 1
@@ -53,7 +40,7 @@ describe DefVisitor do
 
   it "visits line definitions and finds both" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:4", "#{hello_world_filename}:1"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:4", "#{hello_world_filename}:1"], hello_world_filename)
     node.accept visitor
     visitor.files.to_a.should eq [hello_world_filename]
     visitor.all_defs.size.should eq 2
@@ -63,14 +50,14 @@ describe DefVisitor do
 
   it "visits character definitions and finds nothing" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:1:2"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:1:2"], hello_world_filename)
     node.accept visitor
     visitor.files.should be_empty
   end
 
   it "visits character definitions and finds def" do
     node = parse_hello_world
-    visitor = DefVisitor.new(["#{hello_world_filename}:1:1"])
+    visitor = DefVisitor.new(["#{hello_world_filename}:1:1"], hello_world_filename)
     node.accept visitor
     visitor.files.to_a.should eq [hello_world_filename]
     visitor.all_defs.size.should eq 1
