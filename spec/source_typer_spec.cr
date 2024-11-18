@@ -335,6 +335,23 @@ describe SourceTyper do
     OUTPUT
   end
 
+  it "turns unions with nil to have a '?' suffix" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT)
+    def hello(arg)
+      nil
+    end
+    hello(nil)
+    hello("world")
+    INPUT
+    def hello(arg : String?) : Nil
+      nil
+    end
+
+    hello(nil)
+    hello("world")
+    OUTPUT
+  end
+
   it "parses, runs semantic, and types everything" do
     entrypoint = all_def_examples_filename
     typer = SourceTyper.new(entrypoint, ["spec"], options(true, true, true))

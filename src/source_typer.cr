@@ -206,11 +206,7 @@ class SourceTyper
       all_args = all_typed_args.compact_map do |name, type_set|
         compacted_types = filter_no_return(type_set)
 
-        if compacted_types.size > 1
-          {name, Crystal::Union.new(compacted_types.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })}
-        else
-          {name, Crystal::Var.new(compacted_types.to_a[0].to_s)}
-        end
+        {name, to_ast(compacted_types)}
       end.to_h
 
       # Similar idea for return_type
@@ -218,11 +214,7 @@ class SourceTyper
         resolve_type(inst)
       end.uniq!)
 
-      return_type = if returns.size > 1
-                      Crystal::Union.new(returns.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })
-                    else
-                      Crystal::Var.new(returns[0].to_s)
-                    end
+      return_type = to_ast(returns)
 
       {parsed.location.to_s, Signature.new(
         name: parsed.name,
@@ -231,5 +223,21 @@ class SourceTyper
         args: all_args
       )}
     end.to_h
+  end
+
+  private def to_ast(types : Array(Crystal::Type))
+    case types.size
+    when 1
+      Crystal::Var.new(types[0].to_s)
+    when 2
+      if types.includes?(program.nil)
+        not_nil_type = types.reject(&.==(program.nil))[0]
+        Crystal::Var.new("#{not_nil_type}?")
+      else
+        Crystal::Union.new(types.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })
+      end
+    else
+      Crystal::Union.new(types.map { |t| Crystal::Var.new(t.to_s).as(Crystal::ASTNode) })
+    end
   end
 end
