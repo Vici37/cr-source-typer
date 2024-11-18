@@ -318,6 +318,23 @@ describe SourceTyper do
     OUTPUT
   end
 
+  it "doesn't remove newline when inserting return types" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT)
+    def hello
+      # world
+      "world"
+    end
+    hello
+    INPUT
+    def hello : String
+      # world
+      "world"
+    end
+
+    hello
+    OUTPUT
+  end
+
   it "parses, runs semantic, and types everything" do
     entrypoint = all_def_examples_filename
     typer = SourceTyper.new(entrypoint, ["spec"], options(true, true, true))

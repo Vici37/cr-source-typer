@@ -54,7 +54,6 @@ class SourceTyperFormatter < Crystal::Formatter
     elsif (sig = @signatures[node.location.to_s]?) && sig.name != "initialize"
       skip_space
       write " : #{sig.return_type}"
-      skip_space_or_newline
       @added_types = true
     end
 
