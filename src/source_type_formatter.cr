@@ -1,3 +1,7 @@
+# Child class of the crystal formatter, but will write in type restrictions for the def return_type, or individual args,
+# if there's a signature for a given def and those type restrictions are missing.
+#
+# All methods present are copy / paste from the original Crystal::Formatter for the given `visit` methods
 class SourceTyperFormatter < Crystal::Formatter
   @current_def : Crystal::Def? = nil
   getter? added_types = false
@@ -42,19 +46,25 @@ class SourceTyperFormatter < Crystal::Formatter
       next_token_skip_space if @token.type.op_eq?
     end
 
+    # ===== BEGIN NEW CODE =====
+    # Wrap the format_def_args call with a quick-to-reach reference to the current def (for signature lookup)
     @current_def = node
     to_skip = format_def_args node
     @current_def = nil
+    # ===== END NEW CODE =====
 
     if return_type = node.return_type
       skip_space
       write_token " ", :OP_COLON, " "
       skip_space_or_newline
       accept return_type
+      # ===== BEGIN NEW CODE =====
+      # If the def doesn't already have a type restriction and we have a signature for this method, write in the return_type
     elsif (sig = @signatures[node.location.to_s]?) && sig.name != "initialize"
       skip_space
       write " : #{sig.return_type}"
       @added_types = true
+      # ===== END NEW CODE =====
     end
 
     if free_vars = node.free_vars
@@ -131,10 +141,13 @@ class SourceTyperFormatter < Crystal::Formatter
       write_token " ", :OP_COLON, " "
       skip_space_or_newline
       accept restriction
-    elsif (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?) && sig.args[node.name]?
+      # ===== BEGIN NEW CODE =====
+      # If the current arg doesn't have a restriction already and we have a signature, write in the type restriction
+    elsif (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?) && sig.args[node.external_name]?
       skip_space_or_newline
-      write " : #{sig.args[node.name]}"
+      write " : #{sig.args[node.external_name]}"
       @added_types = true
+      # ===== END NEW CODE =====
     end
 
     if default_value
