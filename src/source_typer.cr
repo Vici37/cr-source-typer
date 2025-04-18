@@ -63,6 +63,7 @@ class SourceTyper
 
     # And now infer types of everything
     semantic_node = program.semantic nodes, cleanup: true
+    # puts "\nDone semantic" if @program.progress_tracker.progress
 
     # We might run semantic later in an attempt to resolve defaults, don't display those stats or progress
     @program.progress_tracker.stats = false
@@ -335,6 +336,6 @@ class SourceTyper
   end
 
   def type_name(type : Crystal::Type) : String
-    type.to_s.gsub(/:Module$/, ".class").gsub("+", "")
+    type.to_s.gsub(/:Module\b/, ".class").gsub("+", "")
   end
 end

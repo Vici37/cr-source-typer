@@ -3,6 +3,10 @@ module Crystal
     CRYSTAL_ENV_PROPERTY = {{system("crystal env").stringify}}
 
     def self.default_paths : Array(String)
+      if ENV["CRYSTAL_PATH"]?
+        return ENV["CRYSTAL_PATH"].split(":")
+      end
+
       # Since the std lib isn't actually (likely) installed in the `lib` directory, we
       # need to find it and configure the program's crystal_path to look there, so that
       # the injected prelude will successfully compile. Use the crystal compiler itself
