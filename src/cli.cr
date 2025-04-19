@@ -8,6 +8,7 @@ excludes = ["lib"]
 stats = false
 progress = false
 error_trace = false
+union_size_threshold = Int32::MAX
 
 options = ARGV.dup
 
@@ -64,6 +65,10 @@ parser = OptionParser.new do |opts|
   opts.on("--progress", "Enable progress output") do
     progress = true
   end
+
+  opts.on("--union-size-threshold", "Don't add type restrictions if union type includes this many or more types") do |union_threshold|
+    union_size_threshold = union_threshold.to_i
+  end
 end
 
 if options.empty?
@@ -88,6 +93,7 @@ results = SourceTyper.new(
   type_splats,
   type_double_splats,
   prelude,
+  union_size_threshold,
   stats,
   progress,
   error_trace

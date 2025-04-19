@@ -61,9 +61,11 @@ class SourceTyperFormatter < Crystal::Formatter
       # ===== BEGIN NEW CODE =====
       # If the def doesn't already have a type restriction and we have a signature for this method, write in the return_type
     elsif (sig = @signatures[node.location.to_s]?) && sig.name != "initialize"
-      skip_space
-      write " : #{sig.return_type}"
-      @added_types = true
+      if sig.return_type
+        skip_space
+        write " : #{sig.return_type}"
+        @added_types = true
+      end
       # ===== END NEW CODE =====
     end
 
@@ -144,9 +146,11 @@ class SourceTyperFormatter < Crystal::Formatter
       # ===== BEGIN NEW CODE =====
       # If the current arg doesn't have a restriction already and we have a signature, write in the type restriction
     elsif (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?) && sig.args[node.external_name]?
-      skip_space_or_newline
-      write " : #{sig.args[node.external_name]}"
-      @added_types = true
+      if sig.args[node.external_name]
+        skip_space_or_newline
+        write " : #{sig.args[node.external_name]}"
+        @added_types = true
+      end
       # ===== END NEW CODE =====
     end
 

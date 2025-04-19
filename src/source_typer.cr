@@ -8,6 +8,7 @@ class SourceTyper
                  @type_splats : Bool,
                  @type_double_splats : Bool,
                  @prelude : String = "prelude",
+                 @union_size_threshold : Int32 = Int32::MAX,
                  stats : Bool = false,
                  progress : Bool = false,
                  error_trace : Bool = false)
@@ -310,8 +311,9 @@ class SourceTyper
   end
 
   # Given a list of types, wrap them in a ASTNode appropriate for printing that type out
-  private def to_ast(types : Array(Crystal::Type))
+  private def to_ast(types : Array(Crystal::Type)) : Crystal::ASTNode?
     flattened = flatten_types(types)
+    return nil if flattened.size > @union_size_threshold
     case flattened.size
     when 1
       # Use var to communicate a single type name

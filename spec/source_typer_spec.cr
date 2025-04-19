@@ -6,10 +6,11 @@ def run_source_typer_spec(input, expected_output,
                           line_number : Int32 = 1,
                           named_splats : Bool = true,
                           blocks : Bool = true,
-                          prelude : String = "")
+                          prelude : String = "",
+                          union_size_threshold = Int32::MAX)
   entrypoint_file = File.expand_path("entrypoint.cr")
   locator = line_number > 0 ? "#{entrypoint_file}:#{line_number}" : entrypoint_file
-  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude)
+  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude, union_size_threshold)
 
   typer.semantic(entrypoint_file, input)
 
@@ -479,6 +480,42 @@ describe SourceTyper do
     Bar.new.test(3)
     Foo.new.test(2)
     INPUT
+  end
+
+  it "doesn't add restrictions above threshold - 1" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, union_size_threshold: 1)
+    def foo(a)
+      nil
+    end
+
+    foo(1)
+    foo('a')
+    INPUT
+    def foo(a) : Nil
+      nil
+    end
+
+    foo(1)
+    foo('a')
+    OUTPUT
+  end
+
+  it "doesn't add restrictions above threshold - 2" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, union_size_threshold: 2)
+    def foo(a)
+      nil
+    end
+
+    foo(1)
+    foo('a')
+    INPUT
+    def foo(a : Int32 | Char) : Nil
+      nil
+    end
+
+    foo(1)
+    foo('a')
+    OUTPUT
   end
 
   it "runs prelude and types everything" do
