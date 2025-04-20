@@ -9,6 +9,7 @@ stats = false
 progress = false
 error_trace = false
 union_size_threshold = Int32::MAX
+ignore_private_defs = false
 
 options = ARGV.dup
 
@@ -46,6 +47,10 @@ parser = OptionParser.new do |opts|
     prelude = new_prelude
   end
 
+  opts.on("--ignore-private-defs", "Don't add type restrictions to private methods") do |_|
+    ignore_private_defs = true
+  end
+
   opts.on("--include-blocks", "Enable adding types to named block arguments (these usually get typed with Proc(Nil) and isn't helpful)") do
     type_blocks = true
   end
@@ -66,7 +71,7 @@ parser = OptionParser.new do |opts|
     progress = true
   end
 
-  opts.on("--union-size-threshold", "Don't add type restrictions if union type includes this many or more types") do |union_threshold|
+  opts.on("--union-size-threshold [THRESHOLD]", "Don't add type restrictions if union type includes this many or more types") do |union_threshold|
     union_size_threshold = union_threshold.to_i
   end
 end
@@ -94,6 +99,7 @@ results = SourceTyper.new(
   type_double_splats,
   prelude,
   union_size_threshold,
+  ignore_private_defs,
   stats,
   progress,
   error_trace

@@ -7,10 +7,11 @@ def run_source_typer_spec(input, expected_output,
                           named_splats : Bool = true,
                           blocks : Bool = true,
                           prelude : String = "",
-                          union_size_threshold = Int32::MAX)
+                          union_size_threshold = Int32::MAX,
+                          ignore_private : Bool = false)
   entrypoint_file = File.expand_path("entrypoint.cr")
   locator = line_number > 0 ? "#{entrypoint_file}:#{line_number}" : entrypoint_file
-  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude, union_size_threshold)
+  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude, union_size_threshold, ignore_private)
 
   typer.semantic(entrypoint_file, input)
 
@@ -515,6 +516,32 @@ describe SourceTyper do
 
     foo(1)
     foo('a')
+    OUTPUT
+  end
+
+  it "ignores private defs" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, ignore_private: true)
+    private def foo(a)
+      nil
+    end
+
+    def bar(a)
+      nil
+    end
+
+    foo(1)
+    bar(1)
+    INPUT
+    private def foo(a)
+      nil
+    end
+
+    def bar(a : Int32) : Nil
+      nil
+    end
+
+    foo(1)
+    bar(1)
     OUTPUT
   end
 

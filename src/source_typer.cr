@@ -9,6 +9,7 @@ class SourceTyper
                  @type_double_splats : Bool,
                  @prelude : String = "prelude",
                  @union_size_threshold : Int32 = Int32::MAX,
+                 @ignore_private_defs : Bool = false,
                  stats : Bool = false,
                  progress : Bool = false,
                  error_trace : Bool = false)
@@ -71,7 +72,7 @@ class SourceTyper
     @program.progress_tracker.progress = false
 
     # Use the DefVisitor to locate and match any 'def's that match a def_locator
-    def_visitor = DefVisitor.new(@def_locators, @excludes, entrypoint)
+    def_visitor = DefVisitor.new(@def_locators, @excludes, entrypoint, @ignore_private_defs)
     semantic_node.accept(def_visitor)
 
     # Hash up the location => (parsed) definition.
