@@ -10,6 +10,7 @@ progress = false
 error_trace = false
 union_size_threshold = Int32::MAX
 ignore_private_defs = false
+ignore_protected_defs = false
 
 options = ARGV.dup
 
@@ -47,8 +48,12 @@ parser = OptionParser.new do |opts|
     prelude = new_prelude
   end
 
-  opts.on("--ignore-private-defs", "Don't add type restrictions to private methods") do |_|
+  opts.on("--ignore-private-defs", "Don't add type restrictions to private methods") do
     ignore_private_defs = true
+  end
+
+  opts.on("--ignore-protected-defs", "Don't add type restrictions to protected methods") do
+    ignore_protected_defs = true
   end
 
   opts.on("--include-blocks", "Enable adding types to named block arguments (these usually get typed with Proc(Nil) and isn't helpful)") do
@@ -100,6 +105,7 @@ results = SourceTyper.new(
   prelude,
   union_size_threshold,
   ignore_private_defs,
+  ignore_protected_defs,
   stats,
   progress,
   error_trace

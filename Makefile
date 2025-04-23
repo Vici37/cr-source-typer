@@ -1,4 +1,4 @@
-OUTPUT=typer
+OUTPUT=typify
 
 build:
 	crystal build src/cli.cr -o $(OUTPUT) --error-trace --stats --progress

@@ -13,7 +13,7 @@ class DefVisitor < Crystal::Visitor
   @line_and_column_locators : Array(String) = [] of String
   @excludes : Array(String)
 
-  def initialize(def_locators : Array(String), excludes : Array(String), entrypoint : String, @ignore_private_defs : Bool)
+  def initialize(def_locators : Array(String), excludes : Array(String), entrypoint : String, @ignore_private_defs : Bool, @ignore_protected_defs : Bool)
     if def_locators.empty?
       # No def_locators provided, default to the directory of entrypoint.
       def_locators << File.dirname(entrypoint)
@@ -36,6 +36,7 @@ class DefVisitor < Crystal::Visitor
     return false unless loc.filename && loc.line_number && loc.column_number
     return false if fully_typed?(node)
     return false if @ignore_private_defs && node.visibility.private?
+    return false if @ignore_protected_defs && node.visibility.protected?
     if node_in_def_locators(loc)
       all_defs << node
       files << loc.filename.to_s
