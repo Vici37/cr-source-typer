@@ -215,6 +215,8 @@ class SourceTyper
   private def init_signatures(accepted_defs : Hash(String, Crystal::Def)) : Hash(String, Signature)
     @_signatures ||= accepted_def_instances(accepted_defs).compact_map do |location, def_instances|
       parsed = accepted_defs[location]
+      pp! parsed.receiver
+      pp! parsed.receiver.class
 
       all_typed_args = Hash(String, Set(Crystal::Type)).new { |h, k| h[k] = Set(Crystal::Type).new }
 
@@ -302,6 +304,13 @@ class SourceTyper
       end.uniq!)
 
       return_type = to_ast(returns)
+
+      # Special case - if the method is a static 'new' method returning one thing, replace it with `self` (similar to skipping writing the return of `initialize` methods)
+      return_type = if returns.size == 1 && parsed.receiver.name == "self" && parsed.name == "new"
+                      returns = Crystal::Var.new("self")
+                    else
+                      to_ast(returns)
+                    end
 
       {parsed.location.to_s, Signature.new(
         name: parsed.name,

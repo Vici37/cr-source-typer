@@ -572,6 +572,60 @@ describe SourceTyper do
     OUTPUT
   end
 
+  it "ignores typing initialize" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1)
+    class Test
+      def initialize
+        3
+      end
+
+      def foo
+        3
+      end
+    end
+
+    Test.new.foo
+    INPUT
+    class Test
+      def initialize
+        3
+      end
+
+      def foo : Int32
+        3
+      end
+    end
+
+    Test.new.foo
+    OUTPUT
+  end
+
+  it "ignores typing initialize" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1)
+    class Test
+      def initialize(@a : Int32)
+      end
+
+      def self.new
+        Test.new(3)
+      end
+    end
+
+    Test.new
+    INPUT
+    class Test
+      def initialize(@a : Int32)
+      end
+
+      def self.new : self
+        Test.new(3)
+      end
+    end
+
+    Test.new
+    OUTPUT
+  end
+
   it "runs prelude and types everything" do
     run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, prelude: "prelude")
     # This file tries to capture each type of definition format
