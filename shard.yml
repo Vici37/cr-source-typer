@@ -17,9 +17,6 @@ dependencies:
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
-  ic:
-    github: I3oris/ic
-    branch: master
 
 targets:
   typer:
