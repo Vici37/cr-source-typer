@@ -12,7 +12,6 @@ dependencies:
     github: icyleaf/markd
   reply:
     github: I3oris/reply
-    commit: db423dae3dd34c6ba5e36174653a0c109117a167
 
 development_dependencies:
   ameba:
@@ -26,6 +25,6 @@ executables:
 - typer
 
 scripts:
-  postinstall: shards build
+  postinstall: shards build --without-development
 
 license: MIT
