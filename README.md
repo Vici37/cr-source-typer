@@ -16,17 +16,17 @@ development_dependencies:
     github: Vici37/cr-source-typer
 ```
 
-And run shards install. A new build tool `bin/typer` should now exist.
+And run shards install. A new build tool `bin/typify` should now exist.
 
 ## Usage
 
 As always, you can always use the `-h` flag to get basic help instructions:
 
 ```
-> ./bin/typer -h
+> ./bin/typify -h
 ```
 
-When using it, the `typer` utility should be provided your entrypoint (the same crystal file used
+When using it, the `typify` utility should be provided your entrypoint (the same crystal file used
 with `crystal build`) and 0 or more definition locators, or places where you want typing added
 if it's missing. Definition locators come in 4 "flavors":
 
@@ -63,7 +63,7 @@ Test.hello("test")
 Test.new.hello
 ```
 
-Then running command `./typer hello.cr` will overwrite it with:
+Then running command `./typify hello.cr` will overwrite it with:
 
 ```crystal
 def hello(world : Int32) : Int32

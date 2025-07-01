@@ -15,7 +15,7 @@ class CliOptions
 
     OptionParser.parse(options) do |opts|
       opts.banner = <<-USAGE
-        Usage: typer [options] entrypoint [def_descriptor [def_descriptor [...]]]
+        Usage: typify [options] entrypoint [def_descriptor [def_descriptor [...]]]
 
         A def_descriptor comes in 4 formats:
 
