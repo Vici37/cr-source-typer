@@ -12,6 +12,9 @@ dependencies:
     github: icyleaf/markd
   reply:
     github: I3oris/reply
+  sanitize:
+    github: straight-shoota/sanitize
+    commit: 75c141b619c77956e88f557149566cd28876398b
 
 development_dependencies:
   ameba:
