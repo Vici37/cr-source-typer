@@ -145,9 +145,9 @@ class SourceTyperFormatter < Crystal::Formatter
       accept restriction
       # ===== BEGIN NEW CODE =====
       # If the current arg doesn't have a restriction already and we have a signature, write in the type restriction
+      skip_space_or_newline
     elsif (sig = @signatures[@current_def.try &.location.to_s || 0_u64]?) && sig.args[node.external_name]?
       if sig.args[node.external_name]
-        skip_space_or_newline
         write " : #{sig.args[node.external_name]}"
         @added_types = true
       end

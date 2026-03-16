@@ -11,6 +11,7 @@ class SourceTyper
                  @union_size_threshold : Int32 = Int32::MAX,
                  @ignore_private_defs : Bool = false,
                  @ignore_protected_defs : Bool = false,
+                 @ignore_nodoc : Bool = false,
                  stats : Bool = false,
                  progress : Bool = false,
                  error_trace : Bool = false)
@@ -49,9 +50,10 @@ class SourceTyper
   # Semantic results are used to generate signatures for all defs that match
   # at least one def_locator.
   def semantic(entrypoint, entrypoint_content) : Nil
+    program.wants_doc = true
     parser = program.new_parser(entrypoint_content)
+    parser.wants_doc = true
     parser.filename = entrypoint
-    parser.wants_doc = false
     original_node = parser.parse
 
     nodes = Crystal::Expressions.from([original_node])
@@ -87,7 +89,7 @@ class SourceTyper
     end.to_h
     init_signatures(accepted_defs)
 
-    @files = def_visitor.files
+    @files = signatures.values.map(&.location.filename.to_s).uniq!.to_set
   end
 
   # Given a (presumably) crystal file and its content, re-format it with the crystal-formatter-that-types-things (SourceTyperFormatter).
@@ -97,7 +99,6 @@ class SourceTyper
 
     parser = program.new_parser(source)
     parser.filename = filename
-    parser.wants_doc = false
     original_node = parser.parse
 
     formatter.skip_space_or_newline
@@ -126,6 +127,7 @@ class SourceTyper
     # First, check global definitions
     program.def_instances.each do |_, def_instance|
       next unless accepted_defs.keys.includes?(def_instance.location.to_s)
+      next if @ignore_nodoc && has_nodoc(nil, def_instance)
 
       ret[def_instance.location.to_s] << def_instance
     end
@@ -147,6 +149,7 @@ class SourceTyper
       if type.responds_to?(:def_instances)
         type.def_instances.each do |_, def_instance|
           next unless accepted_defs.keys.includes?(def_instance.location.to_s)
+          next if @ignore_nodoc && has_nodoc(type, def_instance)
 
           ret[def_instance.location.to_s] << def_instance
         end
@@ -157,6 +160,7 @@ class SourceTyper
       if metaclass.responds_to?(:def_instances)
         metaclass.def_instances.each do |_, def_instance|
           next unless accepted_defs.keys.includes?(def_instance.location.to_s)
+          next if @ignore_nodoc && has_nodoc(metaclass, def_instance)
 
           ret[def_instance.location.to_s] << def_instance
         end
@@ -171,6 +175,17 @@ class SourceTyper
     end
 
     ret
+  end
+
+  private def has_nodoc(type, def_inst) : Bool
+    return true if def_inst.doc.try &.starts_with?(":nodoc:")
+
+    if p = type
+      return true if p.doc.try &.starts_with?(":nodoc:")
+      return true if p.ancestors.map(&.doc).any? &.try(&.starts_with?(":nodoc:"))
+    end
+
+    false
   end
 
   private def def_overrides_parent_def(type) : Hash(String, String)
@@ -341,9 +356,9 @@ class SourceTyper
   end
 
   def flatten_types(types : Array(Crystal::Type)) : Array(Crystal::Type)
-    types.map do |type|
+    types.flat_map do |type|
       type.is_a?(Crystal::UnionType) ? flatten_types(type.concrete_types) : type
-    end.flatten.uniq!
+    end.uniq!
   end
 
   def type_name(type : Crystal::Type) : String

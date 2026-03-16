@@ -11,6 +11,7 @@ error_trace = false
 union_size_threshold = Int32::MAX
 ignore_private_defs = false
 ignore_protected_defs = false
+ignore_nodoc = false
 
 options = ARGV.dup
 
@@ -54,6 +55,10 @@ parser = OptionParser.new do |opts|
 
   opts.on("--ignore-protected-defs", "Don't add type restrictions to protected methods") do
     ignore_protected_defs = true
+  end
+
+  opts.on("--ignore-nodoc", "Skip adding type restrictions to methods with or under a :nodoc: doc comment") do
+    ignore_nodoc = true
   end
 
   opts.on("--include-blocks", "Enable adding types to named block arguments (these usually get typed with Proc(Nil) and isn't helpful)") do
@@ -106,6 +111,7 @@ results = SourceTyper.new(
   union_size_threshold,
   ignore_private_defs,
   ignore_protected_defs,
+  ignore_nodoc,
   stats,
   progress,
   error_trace
