@@ -9,14 +9,19 @@ def run_source_typer_spec(input, expected_output,
                           prelude : String = "",
                           union_size_threshold = Int32::MAX,
                           ignore_private : Bool = false,
-                          ignore_protected : Bool = false)
+                          ignore_protected : Bool = false,
+                          ignore_nodoc : Bool = false)
   entrypoint_file = File.expand_path("entrypoint.cr")
   locator = line_number > 0 ? "#{entrypoint_file}:#{line_number}" : entrypoint_file
-  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude, union_size_threshold, ignore_private, ignore_protected)
+  typer = SourceTyper.new(entrypoint_file, [locator], excludes, blocks, splats, named_splats, prelude, union_size_threshold, ignore_private, ignore_protected, ignore_nodoc)
 
   typer.semantic(entrypoint_file, input)
 
-  typer.files.to_a.should eq [entrypoint_file]
+  if expected_output
+    typer.files.to_a.should eq [entrypoint_file]
+  else
+    typer.files.to_a.should be_empty
+  end
   result = typer.type_source(entrypoint_file, input)
   result.try(&.strip).should eq expected_output.try &.strip
 end
@@ -623,6 +628,114 @@ describe SourceTyper do
     end
 
     Test.new
+    OUTPUT
+  end
+
+  it "ignores typing nodoc annotated defs" do
+    run_source_typer_spec(<<-INPUT, nil, line_number: -1, ignore_nodoc: true)
+    # :nodoc:
+    def hello
+      "world"
+    end
+
+    hello
+    INPUT
+  end
+
+  it "ignores typing nodoc annotated classes" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, ignore_nodoc: true)
+    # :nodoc:
+    class Test
+      def hello
+        "world"
+      end
+    end
+
+    def foo
+      1
+    end
+
+    Test.new.hello
+    foo
+    INPUT
+    # :nodoc:
+    class Test
+      def hello
+        "world"
+      end
+    end
+
+    def foo : Int32
+      1
+    end
+
+    Test.new.hello
+    foo
+    OUTPUT
+  end
+
+  it "ignores typing nodoc annotated classes that are re-opened" do
+    run_source_typer_spec(<<-INPUT, nil, line_number: -1, ignore_nodoc: true)
+    # :nodoc:
+    class Test
+    end
+
+    class Test
+      def hello
+        "world"
+      end
+    end
+
+    Test.new.hello
+    INPUT
+  end
+
+  it "ignores typing nodoc annotated classes" do
+    run_source_typer_spec(<<-INPUT, nil, line_number: -1, ignore_nodoc: true)
+    # :nodoc:
+    class Test
+      def hello
+        "world"
+      end
+    end
+
+    Test.new.hello
+    INPUT
+  end
+
+  it "ignores typing nodoc annotated methods in docced classes" do
+    run_source_typer_spec(<<-INPUT, <<-OUTPUT, line_number: -1, ignore_nodoc: true)
+    # This is an awesome class
+    class Test
+      # This is an awesome def
+      def hello
+        "world"
+      end
+
+      # :nodoc:
+      def foo
+        1
+      end
+    end
+
+    Test.new.hello
+    Test.new.foo
+    INPUT
+    # This is an awesome class
+    class Test
+      # This is an awesome def
+      def hello : String
+        "world"
+      end
+
+      # :nodoc:
+      def foo
+        1
+      end
+    end
+
+    Test.new.hello
+    Test.new.foo
     OUTPUT
   end
 
