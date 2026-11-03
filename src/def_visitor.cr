@@ -31,7 +31,7 @@ class DefVisitor < Crystal::Visitor
     @excludes = @excludes - @dir_locators
   end
 
-  def visit(node : Crystal::Def)
+  def visit(node : Crystal::Def) : Bool
     return false unless loc = node.location
     return false unless loc.filename && loc.line_number && loc.column_number
     return false if fully_typed?(node)
@@ -45,7 +45,7 @@ class DefVisitor < Crystal::Visitor
     false
   end
 
-  def visit(node : Crystal::ASTNode)
+  def visit(node : Crystal::ASTNode) : Bool
     true
   end
 

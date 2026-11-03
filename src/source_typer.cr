@@ -16,6 +16,7 @@ class SourceTyper
                  error_trace : Bool = false)
     @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
+    @program.define_crystal_constants
     @files = Set(String).new
     @warnings = [] of String
 
@@ -48,7 +49,7 @@ class SourceTyper
   # Take the entrypoint file (and its textual content) and run semantic on it.
   # Semantic results are used to generate signatures for all defs that match
   # at least one def_locator.
-  def semantic(entrypoint, entrypoint_content) : Nil
+  def semantic(entrypoint : String, entrypoint_content : String) : Nil
     parser = program.new_parser(entrypoint_content)
     parser.filename = entrypoint
     parser.wants_doc = false
@@ -92,7 +93,7 @@ class SourceTyper
 
   # Given a (presumably) crystal file and its content, re-format it with the crystal-formatter-that-types-things (SourceTyperFormatter).
   # Returns nil if no type restrictions were added anywhere.
-  def type_source(filename, source) : String?
+  def type_source(filename : String, source : String) : String?
     formatter = SourceTyperFormatter.new(source, signatures)
 
     parser = program.new_parser(source)
@@ -173,7 +174,7 @@ class SourceTyper
     ret
   end
 
-  private def def_overrides_parent_def(type) : Hash(String, String)
+  private def def_overrides_parent_def(type : Crystal::Type) : Hash(String, String)
     overriden_locations = {} of String => String
     type.defs.try &.each_value do |defs_with_metadata|
       defs_with_metadata.each do |def_with_metadata|
@@ -196,13 +197,13 @@ class SourceTyper
   end
 
   # Given an 'arg', return its type that's good for printing (VirtualTypes suffix themselves with a '+')
-  private def resolve_type(arg)
+  private def resolve_type(arg : Crystal::Arg | Crystal::Def) : Crystal::Type
     t = arg.type
     t.is_a?(Crystal::VirtualType) ? t.base_type : t
   end
 
   # Strip out any NoReturns, or Procs that point to them (maybe all generics? Start with procs)
-  private def filter_no_return(types)
+  private def filter_no_return(types : Set(Crystal::Type) | Array(Crystal::Type)) : Array(Crystal::Type)
     compacted_types = types.to_a.reject! do |type|
       type.no_return? || (type.is_a?(Crystal::ProcInstanceType) && type.as(Crystal::ProcInstanceType).return_type.no_return?)
     end
