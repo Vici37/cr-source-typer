@@ -16,6 +16,7 @@ class SourceTyper
                  error_trace : Bool = false)
     @entrypoint = File.expand_path(@entrypoint) unless @entrypoint.starts_with?("/")
     @program = Crystal::Program.new
+    @program.define_crystal_constants
     @files = Set(String).new
     @warnings = [] of String
 
